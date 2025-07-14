@@ -603,10 +603,44 @@
               justify-content: center;
           }
       }
+      /* Add these styles in the existing <style> section */
+        @media print {
+            .loading-content {
+                display: none !important;
+            }
+
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            .recommendation-card {
+                break-inside: avoid;
+            }
+        }
+
+        /* Add loading state styles */
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
   </head>
   <body>
-    <div class="container" id="capture-container">
+    <div
+      class="container"
+      id="capture-container"
+      data-html2canvas-ignore-absolute="true"
+    >
       <h1>Stroke Prediction Result</h1>
 
       <div
@@ -803,67 +837,6 @@
         </div>
       </div>
 
-      <div
-        class="recommendations-section"
-        id="recommendationsSection"
-        style="display: none"
-      >
-        <h3>Personalized Recommendations</h3>
-        <div class="recommendations-grid">
-          <div class="recommendation-card">
-            <div class="card-header">
-              <i class="fas fa-running"></i>
-              <h4>Physical Activities</h4>
-            </div>
-            <div class="card-content">
-              {% if recommendations and recommendations.activities %} {{
-              recommendations.activities|safe }} {% else %}
-              <p>• Loading recommendations...</p>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="recommendation-card">
-            <div class="card-header">
-              <i class="fas fa-utensils"></i>
-              <h4>Dietary Guidelines</h4>
-            </div>
-            <div class="card-content">
-              {% if recommendations and recommendations.diet %} {{
-              recommendations.diet|safe }} {% else %}
-              <p>• Loading recommendations...</p>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="recommendation-card">
-            <div class="card-header">
-              <i class="fas fa-heart"></i>
-              <h4>Lifestyle Changes</h4>
-            </div>
-            <div class="card-content">
-              {% if recommendations and recommendations.lifestyle %} {{
-              recommendations.lifestyle|safe }} {% else %}
-              <p>• Loading recommendations...</p>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="recommendation-card">
-            <div class="card-header">
-              <i class="fas fa-shield-alt"></i>
-              <h4>Prevention Measures</h4>
-            </div>
-            <div class="card-content">
-              {% if recommendations and recommendations.prevention %} {{
-              recommendations.prevention|safe }} {% else %}
-              <p>• Loading recommendations...</p>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="chart-section">
         <h3>Health Indicators</h3>
         <div class="chart-box">
@@ -871,7 +844,7 @@
         </div>
       </div>
 
-      <div class="button-group no-print">
+      <div class="button-group no-print" data-html2canvas-ignore="true">
         <button onclick="downloadPDF()" class="btn btn-red">
           <svg
             width="20"
@@ -997,193 +970,193 @@
                     options: chartOptions,
                   });
 
+                  // Replace the existing downloadImage and downloadPDF functions with:
                   async function downloadImage() {
-                    const element = document.getElementById("capture-container");
+                    const downloadBtn = document.querySelector('.btn-green');
+                    const originalContent = downloadBtn.innerHTML;
 
                     try {
-                      const canvas = await html2canvas(element, {
-                        scale: 2,
-                        backgroundColor: "#ffffff",
-                        logging: false,
-                        useCORS: true,
-                      });
+                        downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Image...';
+                        downloadBtn.disabled = true;
 
-                      const link = document.createElement("a");
-                      link.download = "stroke_result.png";
-                      link.href = canvas.toDataURL("image/png");
-                      link.click();
+                        const { buttonGroup, recommendBtn } = await prepareForDownload();
+
+                        const element = document.getElementById('capture-container');
+
+                        // Force recommendations to be visible in the clone
+                        const canvas = await html2canvas(element, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: true,
+                            useCORS: true,
+                            allowTaint: true,
+                            onclone: (clonedDoc) => {
+                                const clonedRecommendations = clonedDoc.getElementById('recommendationsSection');
+                                if (clonedRecommendations) {
+                                    clonedRecommendations.style.display = 'block';
+                                    clonedRecommendations.style.opacity = '1';
+                                    clonedRecommendations.querySelectorAll('.loading-content').forEach(loader => {
+                                        loader.remove();
+                                    });
+                                }
+                            }
+                        });
+
+                        // Create and trigger download
+                        const link = document.createElement('a');
+                        link.download = 'HeartCureAI_prediction_result.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+
+                        // Restore the buttons
+                        if (buttonGroup) buttonGroup.style.display = 'flex';
+
                     } catch (error) {
-                      console.error("Error generating image:", error);
-                      alert("Failed to generate image. Please try again.");
+                        console.error('Error generating image:', error);
+                        alert('Failed to generate image. Please try again.');
+                    } finally {
+                        downloadBtn.innerHTML = originalContent;
+                        downloadBtn.disabled = false;
                     }
-                  }
+                }
 
-                  async function downloadPDF() {
+                async function downloadPDF() {
+                    const downloadBtn = document.querySelector('.btn-red');
+                    const originalContent = downloadBtn.innerHTML;
+
                     try {
-                      const { jsPDF } = window.jspdf;
-                      const pdf = new jsPDF({
-                        orientation: "portrait",
-                        unit: "mm",
-                        format: "a4",
-                      });
+                        downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+                        downloadBtn.disabled = true;
 
-                      // A4 dimensions in mm
-                      const pageWidth = 210;
-                      const pageHeight = 297;
-                      const margin = 25; // Increased margin for better readability
+                        const { buttonGroup, recommendBtn } = await prepareForDownload();
 
-                      // Add title to first page
-                      pdf.setFontSize(28); // Increased font size
-                      pdf.setTextColor(0);
-                      const title = "Stroke Prediction Result";
-                      const titleWidth =
-                        (pdf.getStringUnitWidth(title) * pdf.getFontSize()) /
-                        pdf.internal.scaleFactor;
-                      const titleX = (pageWidth - titleWidth) / 2;
-                      pdf.text(title, titleX, margin + 10);
+                        const element = document.getElementById('capture-container');
 
-                      // Capture and add the result box
-                      const resultElement = document.querySelector(".result-box");
-                      const resultCanvas = await html2canvas(resultElement, {
-                        scale: 3, // Increased scale for better quality
-                        backgroundColor: "#ffffff",
-                        logging: false,
-                        useCORS: true,
-                      });
+                        // Force recommendations to be visible in the clone
+                        const canvas = await html2canvas(element, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: true,
+                            useCORS: true,
+                            allowTaint: true,
+                            onclone: (clonedDoc) => {
+                                const clonedRecommendations = clonedDoc.getElementById('recommendationsSection');
+                                if (clonedRecommendations) {
+                                    clonedRecommendations.style.display = 'block';
+                                    clonedRecommendations.style.opacity = '1';
+                                    clonedRecommendations.querySelectorAll('.loading-content').forEach(loader => {
+                                        loader.remove();
+                                    });
+                                }
+                            }
+                        });
 
-                      const resultRatio = resultCanvas.height / resultCanvas.width;
-                      const resultWidth = pageWidth - 2 * margin;
-                      const resultHeight = resultWidth * resultRatio;
+                        // Create PDF with proper dimensions
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF({
+                            orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+                            unit: 'mm',
+                            format: 'a4'
+                        });
 
-                      pdf.addImage(
-                        resultCanvas.toDataURL("image/png"),
-                        "PNG",
-                        margin,
-                        margin + 20,
-                        resultWidth,
-                        resultHeight
-                      );
+                        const imgData = canvas.toDataURL('image/png');
+                        const pageWidth = pdf.internal.pageSize.getWidth();
+                        const pageHeight = pdf.internal.pageSize.getHeight();
+                        const imgWidth = canvas.width;
+                        const imgHeight = canvas.height;
+                        const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+                        const imgX = (pageWidth - imgWidth * ratio) / 2;
+                        const imgY = 0;
 
-                      // Capture and add the summary section
-                      const summaryElement = document.querySelector(".summary-section");
-                      const summaryCanvas = await html2canvas(summaryElement, {
-                        scale: 3, // Increased scale for better quality
-                        backgroundColor: "#ffffff",
-                        logging: false,
-                        useCORS: true,
-                      });
+                        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
 
-                      const summaryRatio = summaryCanvas.height / summaryCanvas.width;
-                      const summaryWidth = pageWidth - 2 * margin;
-                      const summaryHeight = summaryWidth * summaryRatio;
+                        // Add page numbers
+                        pdf.setFontSize(10);
+                        pdf.setTextColor(100);
+                        pdf.text('Generated by HeartCureAI', pageWidth/2, pageHeight - 10, { align: 'center' });
 
-                      pdf.addImage(
-                        summaryCanvas.toDataURL("image/png"),
-                        "PNG",
-                        margin,
-                        margin + 20 + resultHeight + 15,
-                        summaryWidth,
-                        summaryHeight
-                      );
+                        pdf.save('HeartCureAI_prediction_result.pdf');
 
-                      // Add page 2
-                      pdf.addPage();
+                        // Restore the buttons
+                        if (buttonGroup) buttonGroup.style.display = 'flex';
 
-                      // Capture and add the tips section
-                      const tipsElement = document.querySelector(".tips-section");
-                      const tipsCanvas = await html2canvas(tipsElement, {
-                        scale: 3, // Increased scale for better quality
-                        backgroundColor: "#ffffff",
-                        logging: false,
-                        useCORS: true,
-                      });
-
-                      const tipsRatio = tipsCanvas.height / tipsCanvas.width;
-                      const tipsWidth = pageWidth - 2 * margin;
-                      const tipsHeight = tipsWidth * tipsRatio;
-
-                      pdf.addImage(
-                        tipsCanvas.toDataURL("image/png"),
-                        "PNG",
-                        margin,
-                        margin,
-                        tipsWidth,
-                        tipsHeight
-                      );
-
-                      // Capture and add the chart section
-                      const chartElement = document.querySelector(".chart-section");
-                      const chartCanvas = await html2canvas(chartElement, {
-                        scale: 3, // Increased scale for better quality
-                        backgroundColor: "#ffffff",
-                        logging: false,
-                        useCORS: true,
-                      });
-
-                      const chartRatio = chartCanvas.height / chartCanvas.width;
-                      const chartWidth = pageWidth - 2 * margin;
-                      const chartHeight = chartWidth * chartRatio;
-
-                      pdf.addImage(
-                        chartCanvas.toDataURL("image/png"),
-                        "PNG",
-                        margin,
-                        margin + tipsHeight + 15,
-                        chartWidth,
-                        chartHeight
-                      );
-
-                      // Add footer to both pages
-                      const footerText = "Generated by HeartCure.AI";
-                      pdf.setFontSize(12); // Increased footer font size
-                      pdf.setTextColor(100);
-                      const textWidth =
-                        (pdf.getStringUnitWidth(footerText) * 12) /
-                        pdf.internal.scaleFactor;
-                      const footerX = (pageWidth - textWidth) / 2;
-                      const footerY = pageHeight - 15;
-
-                      // Add footer to first page
-                      pdf.setPage(1);
-                      pdf.text(footerText, footerX, footerY);
-
-                      // Add footer to second page
-                      pdf.setPage(2);
-                      pdf.text(footerText, footerX, footerY);
-
-                      pdf.save("stroke_prediction_result.pdf");
                     } catch (error) {
-                      console.error("Error generating PDF:", error);
-                      alert("Failed to generate PDF. Please try again.");
+                        console.error('Error generating PDF:', error);
+                        alert('Failed to generate PDF. Please try again.');
+                    } finally {
+                        downloadBtn.innerHTML = originalContent;
+                        downloadBtn.disabled = false;
                     }
-                  }
+                }
 
                   function checkAgain() {
                     // Update to use the Flask route
                     window.location.href = "/prediction";
                   }
-                  function showRecommendations() {
-                    const recommendBtn = document.getElementById('recommendBtn');
-                    const recommendationsSection = document.getElementById('recommendationsSection');
+                  async function waitForRecommendations() {
+                    return new Promise((resolve) => {
+                        const checkContent = () => {
+                            const recommendations = document.querySelectorAll('.card-content');
+                            let isLoading = false;
+                            recommendations.forEach(rec => {
+                                if (rec.querySelector('.loading-content')) {
+                                    isLoading = true;
+                                }
+                            });
+                            if (!isLoading) {
+                                resolve();
+                            } else {
+                                setTimeout(checkContent, 500);
+                            }
+                        };
+                        checkContent();
+                    });
+                }
 
-                    // Add loading state to button
-                    recommendBtn.disabled = true;
-                    recommendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Recommendations...';
+                async function showRecommendations() {
+                    return new Promise(async (resolve) => {
+                        const recommendBtn = document.getElementById('recommendBtn');
+                        const recommendationsSection = document.getElementById('recommendationsSection');
 
-                    // Show recommendations section with animation
-                    recommendationsSection.style.display = 'block';
-                    recommendationsSection.style.opacity = '0';
-
-                    setTimeout(() => {
+                        recommendationsSection.style.display = 'block';
                         recommendationsSection.style.opacity = '1';
                         recommendBtn.style.display = 'none';
 
-                        // Trigger card animations
-                        document.querySelectorAll('.recommendation-card').forEach((card, index) => {
-                            card.style.animationDelay = `${index * 0.1}s`;
-                        });
-                    }, 100);
+                        // Wait for recommendations content to load
+                        await waitForRecommendations();
+                        resolve();
+                    });
                 }
+
+                async function prepareForDownload() {
+                    try {
+                        // Show recommendations if not visible
+                        await showRecommendations();
+
+                        // Wait for all content to be fully loaded
+                        await Promise.all([
+                            new Promise(resolve => setTimeout(resolve, 1000)),
+                            document.fonts.ready,
+                            waitForRecommendations()
+                        ]);
+
+                        // Hide buttons and prepare for capture
+                        const buttonGroup = document.querySelector('.button-group');
+                        const recommendBtn = document.getElementById('recommendBtn');
+                        if (buttonGroup) buttonGroup.style.display = 'none';
+                        if (recommendBtn) recommendBtn.style.display = 'none';
+
+                        return { buttonGroup, recommendBtn };
+                    } catch (error) {
+                        console.error('Error preparing for download:', error);
+                        throw error;
+                    }
+                }
+
+              async function restoreButtons(buttonGroup, recommendBtn) {
+                  if (buttonGroup) buttonGroup.style.display = 'flex';
+                  if (recommendBtn) recommendBtn.style.display = 'none'; // Keep recommend button hidden
+              }
 
                 // Initialize Risk Pie Chart
       const riskCtx = document.getElementById('riskChart').getContext('2d');
