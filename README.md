@@ -29,10 +29,8 @@ The system provides:
 
 ## flowchart
 <p align="center">
-  <img src="assets/Flow.png" alt="HeartCureAI Workflow Flowchart" width="800"/>
+  <img src="assets/Flow.png" alt="HeartCureAI Workflow Flowchart" width="400"/>
 </p>
-
----
 
 ## Tech Stack
 
