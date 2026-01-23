@@ -28,11 +28,9 @@ The system provides:
 ---
 
 ## flowchart
-- User enters health-related inputs.
-- Data is preprocessed and formatted
-- Input is passed to the trained ML model
-- Model generates a prediction
-- Result is displayed on the web interface
+<p align="center">
+  <img src="assets/Flow.png" alt="HeartCureAI Workflow Flowchart" width="800"/>
+</p>
 
 ---
 
