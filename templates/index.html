@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -12,6 +12,11 @@
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='img/heart.png') }}"
     />
   </head>
   <body>
@@ -59,11 +64,17 @@
                 Start Assessment
                 <i class="fas fa-arrow-right"></i>
               </a>
-              <a href="{{ url_for('features') }}" class="btn btn-outline">Learn More</a>
+              <a href="{{ url_for('features') }}" class="btn btn-outline"
+                >Learn More</a
+              >
             </div>
           </div>
           <div class="hero-image">
-            <img src="{{ url_for('static', filename='img/heart.png') }}" alt="Metal Heart" class="floating" style="width: 350px; height: auto;" />
+            <img
+              src="{{ url_for('static', filename='img/heart.png') }}"
+              alt="Heart"
+              class="floating"
+            />
           </div>
         </div>
       </div>
